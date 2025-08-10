@@ -5,4 +5,6 @@ module it.ludovico.server {
 
     opens it.ludovico.server to javafx.fxml;
     exports it.ludovico.server;
+    exports it.ludovico.server.controller;
+    opens it.ludovico.server.controller to javafx.fxml;
 }

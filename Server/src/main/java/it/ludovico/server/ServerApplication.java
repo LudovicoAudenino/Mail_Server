@@ -6,17 +6,17 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 
-public class HelloApplication extends Application {
+public class ServerApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
-        stage.setTitle("Hello!");
+        FXMLLoader fxmlLoader = new FXMLLoader(ServerApplication.class.getResource("server-view.fxml"));
+        Scene scene = new Scene(fxmlLoader.load(), 400, 600);
+        stage.setTitle("MailServer");
         stage.setScene(scene);
         stage.show();
+        stage.setOnCloseRequest(event -> {
+        System.exit(0);});
     }
 
 
