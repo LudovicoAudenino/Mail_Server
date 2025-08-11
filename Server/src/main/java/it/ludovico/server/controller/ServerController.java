@@ -1,48 +1,67 @@
-    package it.ludovico.server.controller;
+package it.ludovico.server.controller;
 
-    import it.ludovico.server.model.ServerModel;
-    import javafx.fxml.FXML;
-    import javafx.scene.control.Button;
-    import javafx.scene.control.TextArea;
+import it.ludovico.server.model.Server;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
 
-    import java.io.IOException;
-    import java.net.Socket;
+import java.io.IOException;
 
-    public class ServerController {
-        private volatile boolean serverRunning = false;
-        private ServerModel serverModel;
-        private Thread serverThread;
-        @FXML
-        private Button turnOn;
-        @FXML
-        private Button turnOff;
-        @FXML
-        private TextArea statusLog;
+public class ServerController {
+    private Server server;
+    private Thread serverThread;
+    private volatile boolean running;
+    @FXML
+    private Button turnOn;
+    @FXML
+    private Button turnOff;
+    @FXML
+    private TextArea statusLog;
 
-        @FXML
-        public void serverOn() {
-            if(!serverRunning) {
-                serverThread = new Thread(() -> {
+
+    @FXML
+    public void startServer() {
+        if(!running) {
+            try {
+                server = new Server();
+                running = true;
+                turnOff.setDisable(!running);
+                new Thread(() -> {
                     try {
-                        serverModel = new ServerModel();
-                        serverRunning = true;
-                        statusLog.appendText("Server started and waiting for connection... \n");
+                        server.start();
                     } catch (IOException e) {
-                        statusLog.appendText("ERROR: " + e.getMessage());
                         e.printStackTrace();
+                    } finally {
+                        Platform.runLater(() -> {
+                            statusLog.appendText("Server thread terminated \n");
+                            turnOn.setDisable(running);
+                            turnOff.setDisable(!running);
+                        });
                     }
-
-                });
-                serverThread.start();
-            } else {
-                statusLog.appendText("Server is already running \n");
+                }).start();
+                statusLog.appendText("Server listening... \n");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        }
-
-        @FXML
-        public void serverOff() {
-            if(serverRunning) {
-
-            }
+        } else {
+            statusLog.appendText("Server is already running. \n");
         }
     }
+
+    @FXML
+    public void stopServer() {
+        if(running) {
+            running = false;
+            try {
+                server.stop();
+                statusLog.appendText("Server stopped successfully\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            statusLog.appendText("Server is not running\n");
+        }
+    }
+}
+
