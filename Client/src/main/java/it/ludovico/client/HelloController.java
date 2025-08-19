@@ -12,7 +12,7 @@ public class HelloController {
 
     @FXML
     protected void connectClick() {
-        try (Socket socket = new Socket("localhost", 2501);){
+        try (Socket socket = new Socket("localhost", 8090);){
             statusLog.setText("Connected");
         } catch (IOException e) {
             statusLog.setText("Connection failed");
