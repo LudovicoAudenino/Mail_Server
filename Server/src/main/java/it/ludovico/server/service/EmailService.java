@@ -1,0 +1,12 @@
+package it.ludovico.server.service;
+
+import it.ludovico.server.model.Email;
+
+import java.util.List;
+
+public interface EmailService {
+    boolean sendEmail(Email email);
+    boolean checkToAccounts(List<String> accounts);
+    boolean checkRegisteredAccount(String account);
+    List<Email> getUserMailbox(String user);
+}

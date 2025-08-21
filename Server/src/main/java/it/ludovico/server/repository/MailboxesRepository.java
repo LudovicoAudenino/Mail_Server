@@ -1,4 +1,6 @@
-package it.ludovico.server.model;
+package it.ludovico.server.repository;
+
+import it.ludovico.server.model.Email;
 
 import java.io.*;
 import java.nio.file.*;
@@ -34,17 +36,13 @@ public class MailboxesRepository {
         }
     }
 
-    public void saveMailBoxes() {
+    public void saveMailBoxes() throws IOException {
         lock.writeLock().lock();
         try {
             Files.createDirectories(DATA_PATH.getParent());
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DATA_PATH.toFile()))) {
                 oos.writeObject(accounts);
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             lock.writeLock().unlock();
         }
