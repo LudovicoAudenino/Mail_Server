@@ -1,4 +1,4 @@
-package it.ludovico.server.model;
+package it.ludovico.shared.model;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -63,7 +63,6 @@ public class Email implements Serializable {
     public void setText(String text) {
         this.text = text;
     }
-
 
     public String toString() {
         return "Email{" +

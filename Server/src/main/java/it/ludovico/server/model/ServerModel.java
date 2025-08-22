@@ -1,6 +1,7 @@
 package it.ludovico.server.model;
 
 
+import it.ludovico.shared.model.Email;
 import it.ludovico.server.repository.MailboxesRepository;
 import it.ludovico.server.service.EmailService;
 import javafx.application.Platform;
@@ -14,8 +15,10 @@ import javafx.collections.ObservableList;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,7 +28,7 @@ public class ServerModel implements EmailService {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger requestsProcessed = new AtomicInteger(0);
     
-    // JavaFX Properties for binding
+
     private final BooleanProperty runningProperty = new SimpleBooleanProperty(false);
     private final IntegerProperty requestsProcessedProperty = new SimpleIntegerProperty(0);
 
@@ -71,24 +74,50 @@ public class ServerModel implements EmailService {
     }
 
     public void initializeAccounts() {
-        if (mailboxesRepository.getAccounts().isEmpty()) {
-            for(String account : ACCOUNT_REGISTERED) {
+        Set<String> existingAccounts = mailboxesRepository.getAccountMails();
+        boolean needsSave = false;
+        
+        // Assicurati che tutti gli account registrati esistano
+        for(String account : ACCOUNT_REGISTERED) {
+            if (!existingAccounts.contains(account)) {
                 mailboxesRepository.addAccount(account);
+                needsSave = true;
+                addLog("Inizializzato account mancante: " + account);
             }
         }
-        try {
-            mailboxesRepository.saveMailBoxes();
-        } catch (IOException e) {
-            e.printStackTrace();
+        
+        if (needsSave) {
+            try {
+                mailboxesRepository.saveMailBoxes();
+            } catch (IOException e) {
+                addLog("Errore nel salvataggio durante inizializzazione: " + e.getMessage());
+            }
         }
     }
 
     public List<Email> getUserMailbox(String user) {
-        return mailboxesRepository.getMailBox(user);
+        List<Email> mailbox = mailboxesRepository.getMailBox(user);
+        if (mailbox == null && checkRegisteredAccount(user)) {
+            // Account registrato ma mailbox non inizializzata - la creiamo
+            mailboxesRepository.addAccount(user);
+            try {
+                mailboxesRepository.saveMailBoxes();
+                addLog("Creata mailbox mancante per: " + user);
+                return new ArrayList<>();
+            } catch (IOException e) {
+                addLog("Errore nella creazione mailbox per " + user + ": " + e.getMessage());
+                return null;
+            }
+        }
+        return mailbox;
     }
 
     public List<Email> getNewEmails(String user) {
-        return mailboxesRepository.getMailBox(user).stream()
+        List<Email> mailbox = getUserMailbox(user);
+        if (mailbox == null) {
+            return null;
+        }
+        return mailbox.stream()
                 .filter(email -> !email.isDelivered())
                 .toList();
     }
@@ -125,8 +154,7 @@ public class ServerModel implements EmailService {
         this.running.set(running);
         Platform.runLater(() -> runningProperty.set(running));
     }
-    
-    // JavaFX Properties getters for binding
+
     public BooleanProperty runningProperty() {
         return runningProperty;
     }

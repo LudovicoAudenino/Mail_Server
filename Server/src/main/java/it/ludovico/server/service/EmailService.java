@@ -1,6 +1,6 @@
 package it.ludovico.server.service;
 
-import it.ludovico.server.model.Email;
+import it.ludovico.shared.model.Email;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package it.ludovico.server.handler;
 
-import it.ludovico.server.model.Email;
+import it.ludovico.shared.model.Email;
 import it.ludovico.server.service.EmailService;
 
 import java.io.IOException;
@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class ClientHandler implements Runnable {
-
-    public enum Command {
-        LOGIN, SEND_EMAIL, FETCH_NEW_EMAIL, DISCONNECT
-    }
     private final Socket socket;
     private final Consumer<String> logger;
     private final EmailService emailService;
@@ -33,16 +29,16 @@ public class ClientHandler implements Runnable {
             
             logger.accept("Client connected for single operation");
 
-            Command command = (Command) input.readObject();
+            String command = (String) input.readObject();
             
             switch (command) {
-                case LOGIN:
+                case "LOGIN":
                     handleLogin(input, output);
                     break;
-                case SEND_EMAIL:
+                case "SEND_EMAIL":
                     handleSendEmail(input, output);
                     break;
-                case FETCH_NEW_EMAIL:
+                case "FETCH_NEW_EMAIL":
                     handleFetchNewEmail(input, output);
                     break;
                 default:

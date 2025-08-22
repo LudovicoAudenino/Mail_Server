@@ -55,9 +55,6 @@ public class ServerService {
                 );
 
                 clientThreadPool.submit(clientHandler);
-                
-                server.addLog("Processing single client request");
-                
             } catch (IOException e) {
                 if (server.getRunning()) {
                     server.addLog("Could not accept client connection: " + e.getMessage());
