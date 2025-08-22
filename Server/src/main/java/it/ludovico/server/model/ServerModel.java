@@ -4,6 +4,10 @@ package it.ludovico.server.model;
 import it.ludovico.server.repository.MailboxesRepository;
 import it.ludovico.server.service.EmailService;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -19,7 +23,11 @@ public class ServerModel implements EmailService {
 
     private final ObservableList<String> logs = FXCollections.observableArrayList();
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private final AtomicInteger connectedClients = new AtomicInteger(0);
+    private final AtomicInteger requestsProcessed = new AtomicInteger(0);
+    
+    // JavaFX Properties for binding
+    private final BooleanProperty runningProperty = new SimpleBooleanProperty(false);
+    private final IntegerProperty requestsProcessedProperty = new SimpleIntegerProperty(0);
 
     private final MailboxesRepository mailboxesRepository;
 
@@ -54,7 +62,7 @@ public class ServerModel implements EmailService {
                 mailboxesRepository.saveMailBoxes();
                 return true;
             } catch (IOException e) {
-                System.err.println("Errore nel salvataggio: " + e.getMessage());
+                addLog("Errore nel salvataggio: " + e.getMessage());
                 return false;
             }
 
@@ -79,6 +87,23 @@ public class ServerModel implements EmailService {
         return mailboxesRepository.getMailBox(user);
     }
 
+    public List<Email> getNewEmails(String user) {
+        return mailboxesRepository.getMailBox(user).stream()
+                .filter(email -> !email.isDelivered())
+                .toList();
+    }
+
+    public void markEmailsAsDelivered(String user, List<Email> emails) {
+        for (Email email : emails) {
+            email.setDelivered(true);
+        }
+        try {
+            mailboxesRepository.saveMailBoxes();
+        } catch (IOException e) {
+            addLog("Errore nel salvataggio dopo aver marcato email come consegnate: " + e.getMessage());
+        }
+    }
+
     public ObservableList<String> getLogs() {
         return logs;
     }
@@ -87,20 +112,27 @@ public class ServerModel implements EmailService {
         return running.get();
     }
 
-    public AtomicInteger getConnectedClients() {
-        return connectedClients;
+    public AtomicInteger getRequestsProcessed() {
+        return requestsProcessed;
     }
 
-    public void incrementConnectedClients() {
-        connectedClients.incrementAndGet();
-    }
-
-    public void decrementConnectedClients() {
-        connectedClients.decrementAndGet();
+    public void incrementRequestsProcessed() {
+        int count = requestsProcessed.incrementAndGet();
+        Platform.runLater(() -> requestsProcessedProperty.set(count));
     }
 
     public void setRunning(boolean running) {
         this.running.set(running);
+        Platform.runLater(() -> runningProperty.set(running));
+    }
+    
+    // JavaFX Properties getters for binding
+    public BooleanProperty runningProperty() {
+        return runningProperty;
+    }
+    
+    public IntegerProperty requestsProcessedProperty() {
+        return requestsProcessedProperty;
     }
 
     public void addLog(String message) {

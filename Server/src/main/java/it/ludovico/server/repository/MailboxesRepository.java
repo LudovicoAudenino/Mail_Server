@@ -52,7 +52,6 @@ public class MailboxesRepository {
         lock.readLock().lock();
         try {
             HashMap<String, List<Email>> map = new HashMap<>(accounts);
-            System.out.println(map.toString());
             return new HashMap<>(accounts);
         } finally {
             lock.readLock().unlock();

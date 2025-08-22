@@ -1,10 +1,15 @@
-module it.ludovico.serverModel {
+module it.ludovico.server {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.desktop;
 
-
-    opens it.ludovico.serverModel to javafx.fxml;
-    exports it.ludovico.serverModel;
-    exports it.ludovico.serverModel.controller;
-    opens it.ludovico.serverModel.controller to javafx.fxml;
+    opens it.ludovico.server to javafx.fxml;
+    opens it.ludovico.server.controller to javafx.fxml;
+    
+    exports it.ludovico.server;
+    exports it.ludovico.server.controller;
+    exports it.ludovico.server.model;
+    exports it.ludovico.server.service;
+    exports it.ludovico.server.handler;
+    exports it.ludovico.server.repository;
 }

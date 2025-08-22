@@ -15,6 +15,7 @@ public class Email implements Serializable {
     private String subject;
     private String text;
     private LocalDateTime sent;
+    private boolean delivered;
 
     public Email(String from, List<String> to, String subject, String text) {
         this.id = UUID.randomUUID();
@@ -23,6 +24,7 @@ public class Email implements Serializable {
         this.subject = subject;
         this.text = text;
         this.sent = LocalDateTime.now();
+        this.delivered = false;
     }
 
     public UUID getId() {
@@ -42,6 +44,12 @@ public class Email implements Serializable {
     }
     public LocalDateTime getSent() {
         return sent;
+    }
+    public boolean isDelivered() {
+        return delivered;
+    }
+    public void setDelivered(boolean delivered) {
+        this.delivered = delivered;
     }
     public void setFrom(String from) {
         this.from = from;
