@@ -41,6 +41,12 @@ public class ClientHandler implements Runnable {
                 case "FETCH_NEW_EMAIL":
                     handleFetchNewEmail(input, output);
                     break;
+                case "CHECK_EMAIL_EXISTS":
+                    handleCheckEmailExists(input, output);
+                    break;
+                case "DELETE_EMAIL":
+                    handleDeleteEmail(input, output);
+                    break;
                 default:
                     logger.accept("Unknown command received: " + command);
                     output.writeObject(false);
@@ -95,6 +101,30 @@ public class ClientHandler implements Runnable {
         } else {
             logger.accept("Fetch request for non-existent user: " + userEmail);
             output.writeObject(null);
+        }
+    }
+
+    private void handleCheckEmailExists(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
+        String email = (String) input.readObject();
+        
+        boolean exists = emailService.checkRegisteredAccount(email);
+        output.writeObject(exists);
+        
+        logger.accept("Email existence check for " + email + ": " + (exists ? "exists" : "not found"));
+    }
+
+    private void handleDeleteEmail(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
+        String userEmail = (String) input.readObject();
+        String emailId = (String) input.readObject();
+        
+        if (emailService.checkRegisteredAccount(userEmail)) {
+            boolean deleted = emailService.deleteEmail(userEmail, emailId);
+            output.writeObject(deleted);
+            
+            logger.accept("Delete email request for user " + userEmail + ", email ID " + emailId + ": " + (deleted ? "success" : "failed"));
+        } else {
+            logger.accept("Delete request for non-existent user: " + userEmail);
+            output.writeObject(false);
         }
     }
 

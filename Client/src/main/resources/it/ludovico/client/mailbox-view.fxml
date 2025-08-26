@@ -19,6 +19,7 @@
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="composeButton" onAction="#handleCompose" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Compose Email" />
         <Button fx:id="refreshButton" onAction="#handleRefresh" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Refresh" />
+        <Button fx:id="deleteButton" onAction="#handleDelete" style="-fx-background-color: #FF9800; -fx-text-fill: white;" text="Delete Email" />
         <Button fx:id="logoutButton" onAction="#handleLogout" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Logout" />
       </HBox>
       

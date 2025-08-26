@@ -11,4 +11,5 @@ public interface EmailService {
     List<Email> getUserMailbox(String user);
     List<Email> getNewEmails(String user);
     void markEmailsAsDelivered(String user, List<Email> emails);
+    boolean deleteEmail(String user, String emailId);
 }

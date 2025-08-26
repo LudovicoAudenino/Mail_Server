@@ -17,6 +17,4 @@
   </VBox>
   
   <Button fx:id="loginButton" onAction="#handleLogin" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Login" />
-  
-  <Label style="-fx-font-size: 12px; -fx-text-fill: gray;" text="Available accounts: ludo@gmail.com, franci@gmail.com, elisa@gmail.com" />
 </VBox>

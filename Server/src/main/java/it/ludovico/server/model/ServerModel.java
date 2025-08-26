@@ -163,6 +163,35 @@ public class ServerModel implements EmailService {
         return requestsProcessedProperty;
     }
 
+    public boolean deleteEmail(String user, String emailId) {
+        List<Email> mailbox = getUserMailbox(user);
+        if (mailbox == null) {
+            return false;
+        }
+        
+        // Find the email by ID
+        Email emailToDelete = null;
+        for (Email email : mailbox) {
+            if (email.getId().toString().equals(emailId)) {
+                emailToDelete = email;
+                break;
+            }
+        }
+        
+        if (emailToDelete != null) {
+            mailboxesRepository.deleteEmail(user, emailToDelete);
+            try {
+                mailboxesRepository.saveMailBoxes();
+                addLog("Email deleted for user " + user + ": " + emailId);
+                return true;
+            } catch (IOException e) {
+                addLog("Error saving after deleting email: " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
+    }
+
     public void addLog(String message) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         String timestamp = LocalDateTime.now().format(formatter);

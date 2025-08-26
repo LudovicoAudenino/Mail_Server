@@ -10,10 +10,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class ClientService {
     private static final String SERVER_HOST = "localhost";
@@ -25,93 +22,95 @@ public class ClientService {
         this.model = model;
     }
 
-    // Async login method
-    public CompletableFuture<Boolean> loginAsync() {
-        return CompletableFuture.supplyAsync(() -> {
+    public void login() {
+        new Thread(() -> {
             try {
-                Platform.runLater(() -> model.setStatusMessage("Connecting..."));
-                
-                List<Email> emails = loginSync(model.getUser());
-                
+                List<Email> emails = loginConnect(model.getUser());
+
                 Platform.runLater(() -> {
                     if (emails != null) {
                         model.clearEmails();
                         model.getEmails().addAll(emails);
                         model.setConnectionStatus(true);
-                        model.setStatusMessage("Login successful - " + emails.size() + " emails loaded");
                     } else {
                         model.setConnectionStatus(false);
-                        model.setStatusMessage("Login failed - User not registered");
                     }
                 });
-                return emails != null;
-            } catch (Exception e) {
+            } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
                     model.setConnectionStatus(false);
-                    model.setStatusMessage("Connection error: " + e.getMessage());
+                    AlertService.showError("Login Error", "Connection failed: " + e.getMessage());
                 });
-                return false;
             }
-        });
+        }).start();
     }
 
-    // Async send email method
-    public CompletableFuture<Boolean> sendEmailAsync(String to, String subject, String text) {
-        return CompletableFuture.supplyAsync(() -> {
+    public void sendEmail(List<String> to, String subject, String body) {
+        new Thread(() -> {
+
+            Email mail = new Email(model.getUser(), to, subject, body);
             try {
-                Platform.runLater(() -> model.setStatusMessage("Sending email..."));
-                
-                List<String> recipients = Arrays.stream(to.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-                    
-                Email email = new Email(model.getUser(), recipients, subject, text);
-                boolean success = sendEmailSync(email);
-                
+                boolean success = (Boolean) sendEmailConnect(mail);
                 Platform.runLater(() -> {
                     if (success) {
-                        model.setStatusMessage("Email sent successfully");
+                        AlertService.showSuccess("Email Sent", "Your email has been sent successfully!");
                     } else {
-                        model.setStatusMessage("Failed to send email");
+                        AlertService.showError("Send Failed", "Failed to send email to server");
                     }
                 });
-                
-                return success;
-            } catch (Exception e) {
-                Platform.runLater(() -> model.setStatusMessage("Error sending email: " + e.getMessage()));
-                return false;
+            } catch (IOException | ClassNotFoundException e) {
+                Platform.runLater(() -> {
+                    AlertService.showError("Send Error", "Connection error: " + e.getMessage());
+                });
             }
-        });
+
+        }).start();
     }
 
-    // Async refresh emails method  
-    public CompletableFuture<Integer> refreshEmailsAsync() {
-        return CompletableFuture.supplyAsync(() -> {
+    public void refreshEmails() {
+        new Thread(() -> {
             try {
-                Platform.runLater(() -> model.setStatusMessage("Checking for new emails..."));
-                
-                List<Email> newEmails = fetchNewEmailsSync(model.getUser());
-                
+                List<Email> newEmails = fetchNewEmailsConnect(model.getUser());
+
                 Platform.runLater(() -> {
                     if (newEmails != null && !newEmails.isEmpty()) {
                         model.addNewEmails(FXCollections.observableList(newEmails));
-                        model.setStatusMessage("Received " + newEmails.size() + " new emails");
+                        AlertService.showSuccess("Refresh", "Received " + newEmails.size() + " new emails");
                     } else {
-                        model.setStatusMessage("No new emails");
+                        AlertService.showInfo("Refresh", "No new emails found");
                     }
                 });
-                
-                return newEmails != null ? newEmails.size() : 0;
             } catch (Exception e) {
-                Platform.runLater(() -> model.setStatusMessage("Error refreshing emails: " + e.getMessage()));
-                return -1;
+                Platform.runLater(() -> {
+                    AlertService.showError("Refresh Error", "Could not fetch emails: " + e.getMessage());
+                });
             }
-        });
+        }).start();
     }
 
-    // Private synchronous methods for actual server communication
-    private List<Email> loginSync(String email) throws IOException, ClassNotFoundException {
+    public void deleteEmail(String emailId) {
+        new Thread(() -> {
+            try {
+                boolean deleted = deleteEmailConnect(emailId);
+                
+                Platform.runLater(() -> {
+                    if (deleted) {
+                        // Remove email from local model
+                        model.getEmails().removeIf(email -> email.getId().toString().equals(emailId));
+                        AlertService.showSuccess("Delete", "Email deleted successfully");
+                    } else {
+                        AlertService.showError("Delete Failed", "Could not delete email");
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    AlertService.showError("Delete Error", "Connection error: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
+    private List<Email> loginConnect(String email) throws IOException, ClassNotFoundException {
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
              ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
@@ -124,7 +123,7 @@ public class ClientService {
         }
     }
 
-    private boolean sendEmailSync(Email email) throws IOException, ClassNotFoundException {
+    private boolean sendEmailConnect(Email email) throws IOException, ClassNotFoundException {
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
              ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
@@ -137,7 +136,7 @@ public class ClientService {
         }
     }
 
-    private List<Email> fetchNewEmailsSync(String email) throws IOException, ClassNotFoundException {
+    private List<Email> fetchNewEmailsConnect(String email) throws IOException, ClassNotFoundException {
         try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
              ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
@@ -150,8 +149,31 @@ public class ClientService {
         }
     }
 
-    // Getter for model (useful for controllers)
-    public ClientModel getModel() {
-        return model;
+    public boolean checkEmailExistsConnect(String email) throws IOException, ClassNotFoundException {
+        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
+
+            output.writeObject(Commands.CHECK_EMAIL_EXISTS);
+            output.writeObject(email);
+
+            Object response = input.readObject();
+            return (Boolean) response;
+        }
     }
+
+    public boolean deleteEmailConnect(String emailId) throws IOException, ClassNotFoundException {
+        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
+             ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+             ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
+
+            output.writeObject(Commands.DELETE_EMAIL);
+            output.writeObject(model.getUser());  // Send current user email
+            output.writeObject(emailId);          // Send email ID to delete
+
+            Object response = input.readObject();
+            return (Boolean) response;
+        }
+    }
+
 }

@@ -1,12 +1,12 @@
 package it.ludovico.client.controller;
 
 import it.ludovico.client.model.ClientModel;
+import it.ludovico.client.service.AlertService;
 import it.ludovico.shared.model.Email;
 import it.ludovico.client.service.ClientService;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,6 +43,9 @@ public class MailboxController implements Initializable {
     private Button refreshButton;
     
     @FXML
+    private Button deleteButton;
+    
+    @FXML
     private Button logoutButton;
     
     private ClientModel clientModel;
@@ -50,12 +53,10 @@ public class MailboxController implements Initializable {
     
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Configura le colonne della tabella
-        fromColumn.setCellValueFactory(new PropertyValueFactory<>("from"));
-        subjectColumn.setCellValueFactory(new PropertyValueFactory<>("subject"));
-        dateColumn.setCellValueFactory(new PropertyValueFactory<>("sent"));
-        
-        // Formatta la colonna data
+        fromColumn.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getFrom()));
+        subjectColumn.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getSubject()));
+        dateColumn.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getSent()));
+
         dateColumn.setCellFactory(column -> new TableCell<Email, LocalDateTime>() {
             private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             
@@ -69,8 +70,7 @@ public class MailboxController implements Initializable {
                 }
             }
         });
-        
-        // Listener per la selezione email
+
         emailTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 displayEmailContent(newSelection);
@@ -81,18 +81,12 @@ public class MailboxController implements Initializable {
     public void initializeWithClient(ClientModel model, ClientService service) {
         this.clientModel = model;
         this.clientService = service;
-        
-        // Binding con il model
+
         userEmailLabel.setText("User: " + clientModel.getUser());
         emailTable.setItems(clientModel.getEmails());
-        
-        // Binding del status se c'è un label status
-        if (statusLabel != null) {
-            statusLabel.textProperty().bind(clientModel.statusMessageProperty());
-        }
-        
-        // Binding dello stato dei bottoni
+
         refreshButton.disableProperty().bind(clientModel.connectionStatusProperty().not());
+        deleteButton.disableProperty().bind(emailTable.getSelectionModel().selectedItemProperty().isNull());
     }
     
     
@@ -112,27 +106,32 @@ public class MailboxController implements Initializable {
         try {
             NavigationController.showComposeEmailScene();
         } catch (IOException e) {
-            showAlert("Navigation Error", "Could not open compose window: " + e.getMessage());
+            AlertService.showError("Navigation Error", "Could not open compose window: " + e.getMessage());
         }
     }
     
     @FXML
     protected void handleRefresh() {
         if (clientService != null) {
-            refreshButton.setDisable(true);
+            clientService.refreshEmails();
+        }
+    }
+    
+    @FXML
+    protected void handleDelete() {
+        Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
+        if (selectedEmail != null && clientService != null) {
+            // Ask for confirmation
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmation.setTitle("Delete Email");
+            confirmation.setHeaderText("Delete Email");
+            confirmation.setContentText("Are you sure you want to delete this email from " + selectedEmail.getFrom() + "?");
             
-            clientService.refreshEmailsAsync()
-                .thenAccept(count -> {
-                    refreshButton.setDisable(false);
-                    if (count > 0) {
-                        showAlert("Refresh", "Received " + count + " new emails");
-                    }
-                })
-                .exceptionally(throwable -> {
-                    refreshButton.setDisable(false);
-                    showAlert("Refresh Error", "Could not fetch emails: " + throwable.getMessage());
-                    return null;
-                });
+            confirmation.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    clientService.deleteEmail(selectedEmail.getId().toString());
+                }
+            });
         }
     }
     
@@ -141,14 +140,8 @@ public class MailboxController implements Initializable {
         try {
             NavigationController.showLoginScene();
         } catch (IOException e) {
-            showAlert("Navigation Error", "Could not return to login: " + e.getMessage());
+            AlertService.showError("Navigation Error", "Could not return to login: " + e.getMessage());
         }
     }
     
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
 }
