@@ -28,13 +28,17 @@ public class LoginController {
         
         loginButton.setDisable(true);
 
-        // Create ClientModel and ClientService
         ClientModel clientModel = new ClientModel(email);
         ClientService clientService = new ClientService(clientModel);
         
         // Use async login
-        clientService.login();
-        NavigationController.showMailboxScene(clientModel, clientService);
-    }
-    
+        clientService.login(() -> {
+            try {
+                NavigationController.showMailboxScene(clientModel, clientService);
+            } catch (IOException e) {
+                AlertService.showError("Error", e.getMessage());
+            }
+            });
+        loginButton.setDisable(false);
+        }
 }

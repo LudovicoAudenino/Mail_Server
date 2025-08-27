@@ -22,7 +22,7 @@ public class ClientService {
         this.model = model;
     }
 
-    public void login() {
+    public void login(Runnable OnSuccess) {
         new Thread(() -> {
             try {
                 List<Email> emails = loginConnect(model.getUser());
@@ -32,6 +32,7 @@ public class ClientService {
                         model.clearEmails();
                         model.getEmails().addAll(emails);
                         model.setConnectionStatus(true);
+                        OnSuccess.run();
                     } else {
                         model.setConnectionStatus(false);
                     }

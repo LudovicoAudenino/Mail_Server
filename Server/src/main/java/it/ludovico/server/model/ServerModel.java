@@ -4,6 +4,7 @@ package it.ludovico.server.model;
 import it.ludovico.shared.model.Email;
 import it.ludovico.server.repository.MailboxesRepository;
 import it.ludovico.server.service.EmailService;
+import it.ludovico.server.service.LogService;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -13,8 +14,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +39,7 @@ public class ServerModel implements EmailService {
 
     public ServerModel() {
         this.mailboxesRepository = new MailboxesRepository();
+        LogService.setLogHandler(logs::add);
         initializeAccounts();
     }
 
@@ -65,7 +65,7 @@ public class ServerModel implements EmailService {
                 mailboxesRepository.saveMailBoxes();
                 return true;
             } catch (IOException e) {
-                addLog("Errore nel salvataggio: " + e.getMessage());
+                LogService.error("Errore nel salvataggio: " + e.getMessage());
                 return false;
             }
 
@@ -82,7 +82,7 @@ public class ServerModel implements EmailService {
             if (!existingAccounts.contains(account)) {
                 mailboxesRepository.addAccount(account);
                 needsSave = true;
-                addLog("Inizializzato account mancante: " + account);
+                LogService.info("Inizializzato account mancante: " + account);
             }
         }
         
@@ -90,7 +90,7 @@ public class ServerModel implements EmailService {
             try {
                 mailboxesRepository.saveMailBoxes();
             } catch (IOException e) {
-                addLog("Errore nel salvataggio durante inizializzazione: " + e.getMessage());
+                LogService.error("Errore nel salvataggio durante inizializzazione: " + e.getMessage());
             }
         }
     }
@@ -102,10 +102,10 @@ public class ServerModel implements EmailService {
             mailboxesRepository.addAccount(user);
             try {
                 mailboxesRepository.saveMailBoxes();
-                addLog("Creata mailbox mancante per: " + user);
+                LogService.info("Creata mailbox mancante per: " + user);
                 return new ArrayList<>();
             } catch (IOException e) {
-                addLog("Errore nella creazione mailbox per " + user + ": " + e.getMessage());
+                LogService.error("Errore nella creazione mailbox per " + user + ": " + e.getMessage());
                 return null;
             }
         }
@@ -129,7 +129,7 @@ public class ServerModel implements EmailService {
         try {
             mailboxesRepository.saveMailBoxes();
         } catch (IOException e) {
-            addLog("Errore nel salvataggio dopo aver marcato email come consegnate: " + e.getMessage());
+            LogService.error("Errore nel salvataggio dopo aver marcato email come consegnate: " + e.getMessage());
         }
     }
 
@@ -182,21 +182,15 @@ public class ServerModel implements EmailService {
             mailboxesRepository.deleteEmail(user, emailToDelete);
             try {
                 mailboxesRepository.saveMailBoxes();
-                addLog("Email deleted for user " + user + ": " + emailId);
+                LogService.info("Email deleted for user " + user + ": " + emailId);
                 return true;
             } catch (IOException e) {
-                addLog("Error saving after deleting email: " + e.getMessage());
+                LogService.error("Error saving after deleting email: " + e.getMessage());
                 return false;
             }
         }
         return false;
     }
 
-    public void addLog(String message) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        String timestamp = LocalDateTime.now().format(formatter);
-        String logMessage = String.format("[%s] %s", timestamp, message);
-        Platform.runLater(() -> logs.add(logMessage));
-    }
 
 }

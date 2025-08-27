@@ -15,7 +15,6 @@
       
       <HBox alignment="CENTER_LEFT" spacing="20.0">
         <Label fx:id="userEmailLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="User: " />
-        <Label fx:id="statusLabel" style="-fx-font-size: 12px; -fx-text-fill: gray;" text="Status: Disconnected" />
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="composeButton" onAction="#handleCompose" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Compose Email" />
         <Button fx:id="refreshButton" onAction="#handleRefresh" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Refresh" />
@@ -49,7 +48,7 @@
       <!-- Bottom half: Email content -->
       <VBox>
         <Label style="-fx-font-weight: bold; -fx-padding: 10 0 5 20;" text="Content:" />
-        <TextArea fx:id="emailContentArea" editable="false" VBox.vgrow="ALWAYS" wrapText="true">
+        <TextArea fx:id="emailContentArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS">
           <VBox.margin>
             <Insets bottom="20.0" left="20.0" right="20.0" />
           </VBox.margin>

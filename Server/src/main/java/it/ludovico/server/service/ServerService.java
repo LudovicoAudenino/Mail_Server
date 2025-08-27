@@ -2,6 +2,7 @@ package it.ludovico.server.service;
 
 import it.ludovico.server.handler.ClientHandler;
 import it.ludovico.server.model.ServerModel;
+import it.ludovico.server.service.LogService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -25,7 +26,7 @@ public class ServerService {
 
     public void start() {
         if(server.getRunning()) {
-            server.addLog("Server is already running");
+            LogService.warn("Server is already running");
             return;
         }
         try {
@@ -36,10 +37,10 @@ public class ServerService {
             serverThread = new Thread(this::runServer);
             serverThread.setDaemon(true);
             serverThread.start();
-            server.addLog("Server started at port " + PORT);
+            LogService.info("Server started at port " + PORT);
 
         } catch (IOException e) {
-            server.addLog("Could not listen on port: " + PORT);
+            LogService.error("Could not listen on port: " + PORT);
         }
     }
 
@@ -50,14 +51,13 @@ public class ServerService {
                 
                 ClientHandler clientHandler = new ClientHandler(
                     clientSocket, 
-                    server::addLog, 
                     server
                 );
 
                 clientThreadPool.submit(clientHandler);
             } catch (IOException e) {
                 if (server.getRunning()) {
-                    server.addLog("Could not accept client connection: " + e.getMessage());
+                    LogService.error("Could not accept client connection: " + e.getMessage());
                 }
             }
         }
@@ -65,30 +65,30 @@ public class ServerService {
 
     public void stop() {
         if (!server.getRunning()) {
-            server.addLog("Server is not running");
+            LogService.warn("Server is not running");
             return;
         }
 
         server.setRunning(false);
-        server.addLog("Stopping server...");
+        LogService.info("Stopping server...");
 
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
         } catch (IOException e) {
-            server.addLog("Error closing server socket: " + e.getMessage());
+            LogService.error("Error closing server socket: " + e.getMessage());
         }
 
         if (clientThreadPool != null) {
             clientThreadPool.shutdown();
             try {
                 if (!clientThreadPool.awaitTermination(10, TimeUnit.SECONDS)) {
-                    server.addLog("Forcing shutdown of client connections...");
+                    LogService.warn("Forcing shutdown of client connections...");
                     clientThreadPool.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                server.addLog("Interrupted during shutdown");
+                LogService.error("Interrupted during shutdown");
                 clientThreadPool.shutdownNow();
                 Thread.currentThread().interrupt();
             }
@@ -98,11 +98,11 @@ public class ServerService {
             try {
                 serverThread.join(5000);
             } catch (InterruptedException e) {
-                server.addLog("Interrupted waiting for server thread to finish");
+                LogService.error("Interrupted waiting for server thread to finish");
                 Thread.currentThread().interrupt();
             }
         }
 
-        server.addLog("Server stopped");
+        LogService.info("Server stopped");
     }
 }
