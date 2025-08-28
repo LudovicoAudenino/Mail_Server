@@ -24,8 +24,6 @@ public class ClientHandler implements Runnable {
     public void run() {
         try (ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
              ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
-            
-            LogService.info("Client connected for single operation");
 
             String command = (String) input.readObject();
             
@@ -45,11 +43,19 @@ public class ClientHandler implements Runnable {
                 case "DELETE_EMAIL":
                     handleDeleteEmail(input, output);
                     break;
+                case "REPLY_EMAIL":
+                    handleReplyEmail(input, output);
+                    break;
+                case "REPLY_ALL_EMAIL":
+                    handleReplyAllEmail(input, output);
+                    break;
+                case "FORWARD_EMAIL":
+                    handleForwardEmail(input, output);
+                    break;
                 default:
                     LogService.warn("Unknown command received: " + command);
                     output.writeObject(false);
             }
-            LogService.info("Operation completed, closing connection");
             
         } catch (IOException | ClassNotFoundException e) {
             LogService.error("Error processing client request: " + e.getMessage());
@@ -123,6 +129,48 @@ public class ClientHandler implements Runnable {
         } else {
             LogService.warn("Delete request for non-existent user: " + userEmail);
             output.writeObject(false);
+        }
+    }
+
+    private void handleReplyEmail(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
+        String originalEmailId = (String) input.readObject();
+        Email replyEmail = (Email) input.readObject();
+        
+        boolean success = emailService.replyToEmail(originalEmailId, replyEmail);
+        output.writeObject(success);
+        
+        if (success) {
+            LogService.info("Reply email sent from " + replyEmail.getFrom() + " to " + replyEmail.getTo());
+        } else {
+            LogService.warn("Reply email could not be sent from " + replyEmail.getFrom());
+        }
+    }
+
+    private void handleReplyAllEmail(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
+        String originalEmailId = (String) input.readObject();
+        Email replyAllEmail = (Email) input.readObject();
+        
+        boolean success = emailService.replyAllToEmail(originalEmailId, replyAllEmail);
+        output.writeObject(success);
+        
+        if (success) {
+            LogService.info("Reply-all email sent from " + replyAllEmail.getFrom() + " to " + replyAllEmail.getTo());
+        } else {
+            LogService.warn("Reply-all email could not be sent from " + replyAllEmail.getFrom());
+        }
+    }
+
+    private void handleForwardEmail(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
+        String originalEmailId = (String) input.readObject();
+        Email forwardEmail = (Email) input.readObject();
+        
+        boolean success = emailService.forwardEmail(originalEmailId, forwardEmail);
+        output.writeObject(success);
+        
+        if (success) {
+            LogService.info("Forward email sent from " + forwardEmail.getFrom() + " to " + forwardEmail.getTo());
+        } else {
+            LogService.warn("Forward email could not be sent from " + forwardEmail.getFrom());
         }
     }
 

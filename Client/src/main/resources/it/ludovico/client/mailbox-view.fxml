@@ -14,12 +14,14 @@
       </padding>
       
       <HBox alignment="CENTER_LEFT" spacing="20.0">
+        <Button fx:id="logoutButton" onAction="#handleLogout" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Logout" />
         <Label fx:id="userEmailLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="User: " />
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="composeButton" onAction="#handleCompose" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Compose Email" />
-        <Button fx:id="refreshButton" onAction="#handleRefresh" style="-fx-background-color: #2196F3; -fx-text-fill: white;" text="Refresh" />
         <Button fx:id="deleteButton" onAction="#handleDelete" style="-fx-background-color: #FF9800; -fx-text-fill: white;" text="Delete Email" />
-        <Button fx:id="logoutButton" onAction="#handleLogout" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Logout" />
+        <Button fx:id="forwardButton" onAction="#handleForward" style="-fx-background-color: #3F51B5; -fx-text-fill: white;" text="Forward" />
+        <Button fx:id="replyButton" onAction="#handleReply" style="-fx-background-color: #9C27B0; -fx-text-fill: white;" text="Reply" />
+        <Button fx:id="replyAllButton" onAction="#handleReplyAll" style="-fx-background-color: #673AB7; -fx-text-fill: white;" text="Reply All" />
       </HBox>
       
       <Separator />
@@ -32,7 +34,10 @@
       
       <!-- Top half: Email list -->
       <VBox>
-        <Label style="-fx-font-weight: bold; -fx-padding: 10 0 5 20;" text="Emails:" />
+        <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0 5 20;">
+          <Label style="-fx-font-weight: bold;" text="Emails:" />
+          <Label fx:id="newEmailCountLabel" style="-fx-font-weight: bold; -fx-text-fill: #2196F3; -fx-padding: 0 0 0 10;" text="" />
+        </HBox>
         <TableView fx:id="emailTable" VBox.vgrow="ALWAYS">
           <columns>
             <TableColumn fx:id="fromColumn" prefWidth="200.0" text="From" />

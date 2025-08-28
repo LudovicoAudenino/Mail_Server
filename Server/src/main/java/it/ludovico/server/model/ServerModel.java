@@ -38,8 +38,9 @@ public class ServerModel implements EmailService {
     );
 
     public ServerModel() {
-        this.mailboxesRepository = new MailboxesRepository();
+        // Setup logging first before any operations
         LogService.setLogHandler(logs::add);
+        this.mailboxesRepository = new MailboxesRepository();
         initializeAccounts();
     }
 
@@ -118,13 +119,13 @@ public class ServerModel implements EmailService {
             return null;
         }
         return mailbox.stream()
-                .filter(email -> !email.isDelivered())
+                .filter(email -> !email.isDeliveredTo(user))
                 .toList();
     }
 
     public void markEmailsAsDelivered(String user, List<Email> emails) {
         for (Email email : emails) {
-            email.setDelivered(true);
+            email.markDeliveredTo(user);
         }
         try {
             mailboxesRepository.saveMailBoxes();
@@ -192,5 +193,22 @@ public class ServerModel implements EmailService {
         return false;
     }
 
+    @Override
+    public boolean replyToEmail(String originalEmailId, Email replyEmail) {
+        // Invio la reply come una normale email
+        return sendEmail(replyEmail);
+    }
+
+    @Override
+    public boolean replyAllToEmail(String originalEmailId, Email replyEmail) {
+        // Invio la reply-all come una normale email
+        return sendEmail(replyEmail);
+    }
+
+    @Override
+    public boolean forwardEmail(String originalEmailId, Email forwardEmail) {
+        // Invio l'email inoltrata come una normale email
+        return sendEmail(forwardEmail);
+    }
 
 }

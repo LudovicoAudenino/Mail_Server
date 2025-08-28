@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 
 public class Email implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -15,7 +17,7 @@ public class Email implements Serializable {
     private String subject;
     private String text;
     private LocalDateTime sent;
-    private boolean delivered;
+    private Set<String> deliveredTo;
 
     public Email(String from, List<String> to, String subject, String text) {
         this.id = UUID.randomUUID();
@@ -24,7 +26,7 @@ public class Email implements Serializable {
         this.subject = subject;
         this.text = text;
         this.sent = LocalDateTime.now();
-        this.delivered = false;
+        this.deliveredTo = new HashSet<>();
     }
 
     public UUID getId() {
@@ -45,11 +47,17 @@ public class Email implements Serializable {
     public LocalDateTime getSent() {
         return sent;
     }
-    public boolean isDelivered() {
-        return delivered;
+    public Set<String> getDeliveredTo() {
+        return deliveredTo;
     }
-    public void setDelivered(boolean delivered) {
-        this.delivered = delivered;
+    public void setDeliveredTo(Set<String> deliveredTo) {
+        this.deliveredTo = deliveredTo;
+    }
+    public boolean isDeliveredTo(String user) {
+        return deliveredTo.contains(user);
+    }
+    public void markDeliveredTo(String user) {
+        deliveredTo.add(user);
     }
     public void setFrom(String from) {
         this.from = from;

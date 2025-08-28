@@ -12,4 +12,7 @@ public interface EmailService {
     List<Email> getNewEmails(String user);
     void markEmailsAsDelivered(String user, List<Email> emails);
     boolean deleteEmail(String user, String emailId);
+    boolean replyToEmail(String originalEmailId, Email replyEmail);
+    boolean replyAllToEmail(String originalEmailId, Email replyEmail);
+    boolean forwardEmail(String originalEmailId, Email forwardEmail);
 }

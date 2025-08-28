@@ -31,6 +31,8 @@ public class ComposeEmailController  {
     
     private ClientModel clientModel;
     private ClientService clientService;
+    private String originalEmailId;
+    private String action; // REPLY, REPLY_ALL, FORWARD
 
     
     public void initializeWithClient(ClientModel model, ClientService service) {
@@ -38,6 +40,25 @@ public class ComposeEmailController  {
         this.clientService = service;
         
         fromLabel.setText("From: " + clientModel.getUser());
+    }
+    
+    public void precomposeEmail(List<String> to, String subject, String body, String originalEmailId, String action) {
+        this.originalEmailId = originalEmailId;
+        this.action = action;
+        
+        if (to != null && !to.isEmpty()) {
+            toField.setText(String.join(", ", to));
+        }
+        
+        if (subject != null) {
+            subjectField.setText(subject);
+        }
+        
+        if (body != null) {
+            messageArea.setText(body);
+            // Posiziona il cursore all'inizio per facilitare la digitazione della risposta
+            messageArea.positionCaret(0);
+        }
     }
     
     @FXML
@@ -88,7 +109,27 @@ public class ComposeEmailController  {
         }
         
         sendButton.setDisable(true);
-        clientService.sendEmail(recipients, subject, message);
+        
+        // Usa il metodo appropriato basato sull'azione
+        if (action != null && originalEmailId != null) {
+            switch (action) {
+                case "REPLY":
+                    clientService.replyToEmail(originalEmailId, recipients, subject, message);
+                    break;
+                case "REPLY_ALL":
+                    clientService.replyAllToEmail(originalEmailId, recipients, subject, message);
+                    break;
+                case "FORWARD":
+                    clientService.forwardEmail(originalEmailId, recipients, subject, message);
+                    break;
+                default:
+                    clientService.sendEmail(recipients, subject, message);
+            }
+        } else {
+            // Email normale
+            clientService.sendEmail(recipients, subject, message);
+        }
+        
         clearFields();
         sendButton.setDisable(false);
         handleCancel();

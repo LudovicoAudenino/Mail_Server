@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class MailboxController implements Initializable {
@@ -37,13 +40,23 @@ public class MailboxController implements Initializable {
     private TextArea emailContentArea;
     
     @FXML
-    private Button composeButton;
+    private Label newEmailCountLabel;
     
     @FXML
-    private Button refreshButton;
+    private Button composeButton;
+
     
     @FXML
     private Button deleteButton;
+    
+    @FXML
+    private Button replyButton;
+    
+    @FXML
+    private Button replyAllButton;
+    
+    @FXML
+    private Button forwardButton;
     
     @FXML
     private Button logoutButton;
@@ -71,9 +84,32 @@ public class MailboxController implements Initializable {
             }
         });
 
+        // Custom row factory per highlight email non lette
+        emailTable.setRowFactory(tv -> {
+            TableRow<Email> row = new TableRow<>();
+            row.itemProperty().addListener((obs, oldEmail, newEmail) -> {
+                if (newEmail == null) {
+                    row.setStyle("");
+                } else if (!newEmail.isDeliveredTo(clientModel.getUser())) {
+                    // Email non letta - highlight
+                    row.setStyle("-fx-background-color: #E3F2FD; -fx-font-weight: bold;");
+                } else {
+                    row.setStyle("");
+                }
+            });
+            return row;
+        });
+
         emailTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 displayEmailContent(newSelection);
+                
+                // Se l'email era non letta, marcala come letta
+                if (!newSelection.isDeliveredTo(clientModel.getUser())) {
+                    newSelection.markDeliveredTo(clientModel.getUser());
+                    emailTable.refresh(); // Refresh per aggiornare lo stile
+                    updateNewEmailCount(); // Aggiorna conteggio nella mailbox
+                }
             }
         });
     }
@@ -84,9 +120,19 @@ public class MailboxController implements Initializable {
 
         userEmailLabel.setText("User: " + clientModel.getUser());
         emailTable.setItems(clientModel.getEmails());
-
-        refreshButton.disableProperty().bind(clientModel.connectionStatusProperty().not());
         deleteButton.disableProperty().bind(emailTable.getSelectionModel().selectedItemProperty().isNull());
+        replyButton.disableProperty().bind(emailTable.getSelectionModel().selectedItemProperty().isNull());
+        replyAllButton.disableProperty().bind(emailTable.getSelectionModel().selectedItemProperty().isNull());
+        forwardButton.disableProperty().bind(emailTable.getSelectionModel().selectedItemProperty().isNull());
+        
+
+        if (clientService != null) {
+            clientService.setOnEmailCountChange(this::updateNewEmailCount);
+            clientService.startAutoRefresh();
+        }
+        
+        // Inizializza il conteggio delle nuove email
+        updateNewEmailCount();
     }
     
     
@@ -137,10 +183,103 @@ public class MailboxController implements Initializable {
     
     @FXML
     protected void handleLogout() {
+        // Stop auto-refresh prima del logout
+        if (clientService != null) {
+            clientService.stopAutoRefresh();
+        }
+        
         try {
             NavigationController.showLoginScene();
         } catch (IOException e) {
             AlertService.showError("Navigation Error", "Could not return to login: " + e.getMessage());
+        }
+    }
+    
+    @FXML
+    protected void handleReply() {
+        Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
+        if (selectedEmail != null) {
+            // Prepara i dati per la reply
+            List<String> replyTo = Arrays.asList(selectedEmail.getFrom());
+            String replySubject = selectedEmail.getSubject().startsWith("Re: ") ? 
+                selectedEmail.getSubject() : "Re: " + selectedEmail.getSubject();
+            String replyBody = "\n\n--- Original Message ---\n" + 
+                "From: " + selectedEmail.getFrom() + "\n" +
+                "Date: " + selectedEmail.getSent().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "\n" +
+                "Subject: " + selectedEmail.getSubject() + "\n\n" +
+                selectedEmail.getText();
+                
+            try {
+                NavigationController.showComposeEmailScene(replyTo, replySubject, replyBody, selectedEmail.getId().toString(), "REPLY");
+            } catch (IOException e) {
+                AlertService.showError("Navigation Error", "Could not open compose window: " + e.getMessage());
+            }
+        }
+    }
+    
+    @FXML
+    protected void handleReplyAll() {
+        Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
+        if (selectedEmail != null) {
+            // Prepara i dati per la reply-all
+            List<String> replyTo = new ArrayList<>();
+            replyTo.add(selectedEmail.getFrom());
+            // Aggiungi tutti i destinatari originali eccetto l'utente corrente
+            for (String recipient : selectedEmail.getTo()) {
+                if (!recipient.equals(clientModel.getUser()) && !replyTo.contains(recipient)) {
+                    replyTo.add(recipient);
+                }
+            }
+            
+            String replySubject = selectedEmail.getSubject().startsWith("Re: ") ? 
+                selectedEmail.getSubject() : "Re: " + selectedEmail.getSubject();
+            String replyBody = "\n\n--- Original Message ---\n" + 
+                "From: " + selectedEmail.getFrom() + "\n" +
+                "Date: " + selectedEmail.getSent().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "\n" +
+                "Subject: " + selectedEmail.getSubject() + "\n\n" +
+                selectedEmail.getText();
+                
+            try {
+                NavigationController.showComposeEmailScene(replyTo, replySubject, replyBody, selectedEmail.getId().toString(), "REPLY_ALL");
+            } catch (IOException e) {
+                AlertService.showError("Navigation Error", "Could not open compose window: " + e.getMessage());
+            }
+        }
+    }
+    
+    @FXML
+    protected void handleForward() {
+        Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
+        if (selectedEmail != null) {
+            // Prepara i dati per il forward
+            String forwardSubject = selectedEmail.getSubject().startsWith("Fwd: ") ? 
+                selectedEmail.getSubject() : "Fwd: " + selectedEmail.getSubject();
+            String forwardBody = "\n\n--- Forwarded Message ---\n" + 
+                "From: " + selectedEmail.getFrom() + "\n" +
+                "To: " + String.join(", ", selectedEmail.getTo()) + "\n" +
+                "Date: " + selectedEmail.getSent().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "\n" +
+                "Subject: " + selectedEmail.getSubject() + "\n\n" +
+                selectedEmail.getText();
+                
+            try {
+                NavigationController.showComposeEmailScene(new ArrayList<>(), forwardSubject, forwardBody, selectedEmail.getId().toString(), "FORWARD");
+            } catch (IOException e) {
+                AlertService.showError("Navigation Error", "Could not open compose window: " + e.getMessage());
+            }
+        }
+    }
+    
+    private void updateNewEmailCount() {
+        if (clientModel != null && newEmailCountLabel != null) {
+            long unreadCount = clientModel.getEmails().stream()
+                .filter(email -> !email.isDeliveredTo(clientModel.getUser()))
+                .count();
+            
+            if (unreadCount > 0) {
+                newEmailCountLabel.setText("(" + unreadCount + " new)");
+            } else {
+                newEmailCountLabel.setText("");
+            }
         }
     }
     

@@ -89,16 +89,14 @@ public class ServerController implements Initializable {
     private void setupLogsBinding() {
         // Bind logs TextArea to the ObservableList
         serverModel.getLogs().addListener((javafx.collections.ListChangeListener<String>) change -> {
-            Platform.runLater(() -> {
-                StringBuilder logText = new StringBuilder();
-                for (String log : serverModel.getLogs()) {
-                    logText.append(log).append("\n");
-                }
-                logsTextArea.setText(logText.toString());
-                
-                // Auto scroll to bottom
-                logsTextArea.setScrollTop(Double.MAX_VALUE);
-            });
+            StringBuilder logText = new StringBuilder();
+            for (String log : serverModel.getLogs()) {
+                logText.append(log).append("\n");
+            }
+            logsTextArea.setText(logText.toString());
+            
+            // Auto scroll to bottom
+            logsTextArea.positionCaret(logsTextArea.getText().length());
         });
     }
 
