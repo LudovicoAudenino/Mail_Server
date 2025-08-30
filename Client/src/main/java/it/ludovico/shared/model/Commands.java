@@ -1,4 +1,4 @@
-package it.ludovico.client.model;
+package it.ludovico.shared.model;
 
 public class Commands {
     public static final String LOGIN = "LOGIN";
@@ -9,5 +9,6 @@ public class Commands {
     public static final String REPLY_EMAIL = "REPLY_EMAIL";
     public static final String REPLY_ALL_EMAIL = "REPLY_ALL_EMAIL";
     public static final String FORWARD_EMAIL = "FORWARD_EMAIL";
+    public static final String DISCONNECT = "DISCONNECT";
     public static final String PING = "PING";
 }

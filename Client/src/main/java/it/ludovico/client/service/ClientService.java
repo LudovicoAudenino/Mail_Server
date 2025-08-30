@@ -1,7 +1,7 @@
 package it.ludovico.client.service;
 
 import it.ludovico.client.model.ClientModel;
-import it.ludovico.client.model.Commands;
+import it.ludovico.shared.model.Commands;
 import it.ludovico.shared.model.Email;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -29,7 +29,7 @@ public class ClientService {
     
     private ScheduledExecutorService heartbeatScheduler;
     private ScheduledFuture<?> heartbeatTask;
-    private final int heartbeatInterval = 15;
+    private final int heartbeatInterval = 5;
     private Runnable onServerStatusChange;
     private boolean lastServerStatus = true;
 

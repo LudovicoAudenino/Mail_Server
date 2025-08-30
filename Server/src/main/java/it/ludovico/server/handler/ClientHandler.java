@@ -1,6 +1,7 @@
 package it.ludovico.server.handler;
 
 import it.ludovico.shared.model.Email;
+import it.ludovico.shared.model.Commands;
 import it.ludovico.server.service.EmailService;
 import it.ludovico.server.service.LogService;
 
@@ -28,31 +29,31 @@ public class ClientHandler implements Runnable {
             String command = (String) input.readObject();
             
             switch (command) {
-                case "LOGIN":
+                case Commands.LOGIN:
                     handleLogin(input, output);
                     break;
-                case "SEND_EMAIL":
+                case Commands.SEND_EMAIL:
                     handleSendEmail(input, output);
                     break;
-                case "FETCH_NEW_EMAIL":
+                case Commands.FETCH_NEW_EMAIL:
                     handleFetchNewEmail(input, output);
                     break;
-                case "CHECK_EMAIL_EXISTS":
+                case Commands.CHECK_EMAIL_EXISTS:
                     handleCheckEmailExists(input, output);
                     break;
-                case "DELETE_EMAIL":
+                case Commands.DELETE_EMAIL:
                     handleDeleteEmail(input, output);
                     break;
-                case "REPLY_EMAIL":
+                case Commands.REPLY_EMAIL:
                     handleReplyEmail(input, output);
                     break;
-                case "REPLY_ALL_EMAIL":
+                case Commands.REPLY_ALL_EMAIL:
                     handleReplyAllEmail(input, output);
                     break;
-                case "FORWARD_EMAIL":
+                case Commands.FORWARD_EMAIL:
                     handleForwardEmail(input, output);
                     break;
-                case "PING":
+                case Commands.PING:
                     output.writeObject("PONG");
                     break;
                 default:
