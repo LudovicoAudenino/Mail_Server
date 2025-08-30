@@ -16,35 +16,167 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Client-side network service for communicating with the JavaFX Mail System server.
+ * 
+ * <p>This service handles all network operations between the mail client and server,
+ * including authentication, email operations, and server monitoring. It provides
+ * asynchronous operations with proper JavaFX thread management and comprehensive
+ * error handling with user-friendly alerts.</p>
+ * 
+ * <h2>Key Features</h2>
+ * <ul>
+ *   <li><strong>Email Operations:</strong> Login, send, receive, delete, reply, forward functionality</li>
+ *   <li><strong>Auto-refresh:</strong> Automatic periodic checking for new emails</li>
+ *   <li><strong>Server Monitoring:</strong> Heartbeat system to detect server availability</li>
+ *   <li><strong>Async Processing:</strong> All network operations run in background threads</li>
+ *   <li><strong>Error Handling:</strong> Comprehensive exception handling with user notifications</li>
+ *   <li><strong>Thread Safety:</strong> Proper JavaFX Platform.runLater() usage for UI updates</li>
+ * </ul>
+ * 
+ * <h2>Server Configuration</h2>
+ * <ul>
+ *   <li><strong>Host:</strong> localhost</li>
+ *   <li><strong>Port:</strong> 8888</li>
+ *   <li><strong>Protocol:</strong> TCP with ObjectInputStream/ObjectOutputStream</li>
+ *   <li><strong>Refresh Interval:</strong> 30 seconds for automatic email checking</li>
+ *   <li><strong>Heartbeat Interval:</strong> 5 seconds for server status monitoring</li>
+ * </ul>
+ * 
+ * <h2>Threading Architecture</h2>
+ * <p>The service uses multiple threading strategies:</p>
+ * <ul>
+ *   <li>Individual threads for one-time operations (login, send, etc.)</li>
+ *   <li>Scheduled executor for periodic auto-refresh</li>
+ *   <li>Scheduled executor for server heartbeat monitoring</li>
+ *   <li>JavaFX Application Thread for UI updates via Platform.runLater()</li>
+ * </ul>
+ * 
+ * @author JavaFX Mail System Team
+ * @version 1.0
+ * @since 1.0
+ * @see ClientModel
+ * @see Commands
+ * @see AlertService
+ */
 public class ClientService {
+    /**
+     * The hostname of the mail server to connect to.
+     */
     private static final String SERVER_HOST = "localhost";
+    
+    /**
+     * The TCP port of the mail server.
+     */
     private static final int SERVER_PORT = 8888;
 
+    /**
+     * Reference to the client model for state management.
+     */
     private final ClientModel model;
     
+    /**
+     * Scheduler for automatic email refresh operations.
+     */
     private ScheduledExecutorService autoRefreshScheduler;
+    
+    /**
+     * Task handle for the current auto-refresh operation.
+     */
     private ScheduledFuture<?> autoRefreshTask;
+    
+    /**
+     * Interval in seconds between automatic email refresh operations.
+     */
     private final int refreshInterval = 30;
+    
+    /**
+     * Callback executed when new emails are received during auto-refresh.
+     */
     private Runnable onEmailCountChange;
     
+    /**
+     * Scheduler for server heartbeat monitoring.
+     */
     private ScheduledExecutorService heartbeatScheduler;
+    
+    /**
+     * Task handle for the current heartbeat operation.
+     */
     private ScheduledFuture<?> heartbeatTask;
+    
+    /**
+     * Interval in seconds between server heartbeat checks.
+     */
     private final int heartbeatInterval = 5;
+    
+    /**
+     * Callback executed when server status changes (online/offline).
+     */
     private Runnable onServerStatusChange;
+    
+    /**
+     * The last known server status to detect status changes.
+     */
     private boolean lastServerStatus = true;
 
+    /**
+     * Constructs a new ClientService with the specified client model.
+     * 
+     * <p>The client model provides state management and data binding capabilities
+     * for the mail client application. The service will coordinate with the model
+     * to maintain client state and notify the UI of changes.</p>
+     * 
+     * @param model the client model for state management; must not be null
+     * @throws NullPointerException if model is null
+     */
     public ClientService(ClientModel model) {
         this.model = model;
     }
     
+    /**
+     * Sets the callback to be executed when new emails are received during auto-refresh.
+     * 
+     * <p>This callback is typically used to update UI elements like notification badges
+     * or play sound alerts when new emails arrive automatically in the background.</p>
+     * 
+     * @param callback the callback to execute when new emails are received; may be null
+     */
     public void setOnEmailCountChange(Runnable callback) {
         this.onEmailCountChange = callback;
     }
     
+    /**
+     * Sets the callback to be executed when the server status changes (online/offline).
+     * 
+     * <p>This callback is typically used to update UI indicators showing whether
+     * the mail server is currently available for operations.</p>
+     * 
+     * @param callback the callback to execute when server status changes; may be null
+     */
     public void setOnServerStatusChange(Runnable callback) {
         this.onServerStatusChange = callback;
     }
 
+    /**
+     * Attempts to authenticate the user and retrieve their complete mailbox.
+     * 
+     * <p>This method performs the initial login sequence by sending the user's email
+     * address to the server for validation. If successful, it retrieves the user's
+     * complete mailbox and updates the client model. The operation runs in a background
+     * thread to prevent UI blocking.</p>
+     * 
+     * <h3>Login Process</h3>
+     * <ol>
+     *   <li>Connect to server and send LOGIN command</li>
+     *   <li>Send user's email address for authentication</li>
+     *   <li>Receive mailbox data or null if authentication fails</li>
+     *   <li>Update client model and connection status</li>
+     *   <li>Execute success callback if login succeeds</li>
+     * </ol>
+     * 
+     * @param OnSuccess callback to execute after successful login; may be null
+     */
     public void login(Runnable OnSuccess) {
         new Thread(() -> {
             try {
@@ -411,13 +543,15 @@ public class ClientService {
             final boolean currentStatus = serverOnline;
             
             if (currentStatus != lastServerStatus) {
+                boolean oldStatus = lastServerStatus;
                 lastServerStatus = currentStatus;
                 Platform.runLater(() -> {
                     if (onServerStatusChange != null) {
                         onServerStatusChange.run();
                     }
                     
-                    if (currentStatus && model.getConnectionStatus()) {
+                    // Only refresh emails if we're reconnecting after being disconnected
+                    if (currentStatus && !oldStatus && model.getConnectionStatus()) {
                         refreshEmails();
                     }
                 });

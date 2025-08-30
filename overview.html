@@ -1,0 +1,216 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>JavaFX Mail System - Project Overview</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+<h1>JavaFX Mail System</h1>
+
+<p>A comprehensive client-server email system built with JavaFX, featuring a modern graphical interface,
+real-time communication, and robust email management capabilities.</p>
+
+<h2>System Architecture</h2>
+
+<p>The JavaFX Mail System is a distributed application consisting of two main components:</p>
+
+<ul>
+    <li><strong>Mail Server</strong> - Backend server handling client connections and email storage</li>
+    <li><strong>Mail Client</strong> - Frontend application providing the user interface</li>
+</ul>
+
+<h3>Server Component</h3>
+<p>The server application provides:</p>
+<ul>
+    <li>TCP socket server listening on port 8888</li>
+    <li>Concurrent client handling with thread pool (max 3 clients)</li>
+    <li>File-based email storage and persistence</li>
+    <li>Real-time server monitoring and logging interface</li>
+    <li>Stateless HTTP-like communication protocol</li>
+</ul>
+
+<h3>Client Component</h3>
+<p>The client application features:</p>
+<ul>
+    <li>JavaFX-based graphical user interface</li>
+    <li>User authentication and session management</li>
+    <li>Email composition, viewing, and management</li>
+    <li>Automatic email refresh and server status monitoring</li>
+    <li>Reply, reply-all, and forward functionality</li>
+</ul>
+
+<h2>Technology Stack</h2>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Version</th>
+    </tr>
+    <tr>
+        <td>UI Framework</td>
+        <td>JavaFX</td>
+        <td>17.0.6</td>
+    </tr>
+    <tr>
+        <td>Java Runtime</td>
+        <td>OpenJDK</td>
+        <td>24</td>
+    </tr>
+    <tr>
+        <td>Build System</td>
+        <td>Maven</td>
+        <td>3.x</td>
+    </tr>
+    <tr>
+        <td>Module System</td>
+        <td>Java Platform Module System (JPMS)</td>
+        <td>9+</td>
+    </tr>
+    <tr>
+        <td>Networking</td>
+        <td>TCP Sockets with Object Serialization</td>
+        <td>Java SE</td>
+    </tr>
+    <tr>
+        <td>Data Storage</td>
+        <td>File-based serialization</td>
+        <td>Java SE</td>
+    </tr>
+</table>
+
+<h2>Communication Protocol</h2>
+
+<p>The system uses a custom stateless protocol over TCP connections:</p>
+
+<h3>Protocol Commands</h3>
+<ul>
+    <li><strong>LOGIN</strong> - User authentication and mailbox retrieval</li>
+    <li><strong>SEND_EMAIL</strong> - Send new email messages</li>
+    <li><strong>FETCH_NEW_EMAIL</strong> - Retrieve undelivered emails</li>
+    <li><strong>DELETE_EMAIL</strong> - Remove emails from mailbox</li>
+    <li><strong>REPLY_EMAIL</strong> - Send reply to existing email</li>
+    <li><strong>REPLY_ALL_EMAIL</strong> - Send reply to all recipients</li>
+    <li><strong>FORWARD_EMAIL</strong> - Forward email to new recipients</li>
+    <li><strong>CHECK_EMAIL_EXISTS</strong> - Validate email addresses</li>
+    <li><strong>PING</strong> - Server connectivity testing</li>
+</ul>
+
+<h3>Communication Flow</h3>
+<ol>
+    <li>Client opens TCP connection to server on port 8888</li>
+    <li>Client sends command string via ObjectOutputStream</li>
+    <li>Client sends command parameters (if required)</li>
+    <li>Server processes request and sends response via ObjectOutputStream</li>
+    <li>Connection is closed automatically (stateless design)</li>
+</ol>
+
+<h2>Key Features</h2>
+
+<h3>Email Management</h3>
+<ul>
+    <li>Send emails to multiple recipients</li>
+    <li>Reply and reply-all functionality</li>
+    <li>Forward emails with original content</li>
+    <li>Delete emails permanently</li>
+    <li>Automatic duplicate delivery prevention</li>
+</ul>
+
+<h3>User Experience</h3>
+<ul>
+    <li>Intuitive JavaFX interface with modern design</li>
+    <li>Real-time email synchronization</li>
+    <li>Server status indicators and connection monitoring</li>
+    <li>Comprehensive error handling with user-friendly messages</li>
+    <li>Automatic background operations (refresh, heartbeat)</li>
+</ul>
+
+<h3>Server Administration</h3>
+<ul>
+    <li>Real-time server monitoring interface</li>
+    <li>Live request processing statistics</li>
+    <li>Comprehensive logging with timestamps</li>
+    <li>Start/stop server controls</li>
+    <li>Connection status and client activity monitoring</li>
+</ul>
+
+<h2>Registered Accounts</h2>
+
+<p>The system currently supports three pre-configured user accounts:</p>
+<ul>
+    <li><code>ludo@gmail.com</code></li>
+    <li><code>franci@gmail.com</code></li>
+    <li><code>elisa@gmail.com</code></li>
+</ul>
+
+<h2>Project Structure</h2>
+
+<h3>Server Module (Server/)</h3>
+<ul>
+    <li><strong>it.ludovico.server</strong> - Main server application entry point</li>
+    <li><strong>it.ludovico.server.model</strong> - Business logic and data models</li>
+    <li><strong>it.ludovico.server.service</strong> - Network and utility services</li>
+    <li><strong>it.ludovico.server.handler</strong> - Client connection handlers</li>
+    <li><strong>it.ludovico.server.controller</strong> - JavaFX UI controllers</li>
+    <li><strong>it.ludovico.server.repository</strong> - Data persistence layer</li>
+    <li><strong>it.ludovico.shared.model</strong> - Shared data models and protocols</li>
+</ul>
+
+<h3>Client Module (Client/)</h3>
+<ul>
+    <li><strong>it.ludovico.client</strong> - Main client application entry point</li>
+    <li><strong>it.ludovico.client.model</strong> - Client-side data models</li>
+    <li><strong>it.ludovico.client.service</strong> - Network communication services</li>
+    <li><strong>it.ludovico.client.controller</strong> - JavaFX UI controllers</li>
+    <li><strong>it.ludovico.shared.model</strong> - Shared data models and protocols</li>
+</ul>
+
+
+<h2>Threading Model</h2>
+
+<h3>Server Threading</h3>
+<ul>
+    <li><strong>Main Thread</strong> - JavaFX Application Thread for UI</li>
+    <li><strong>Server Thread</strong> - Accepts incoming client connections</li>
+    <li><strong>Client Threads</strong> - Process individual client requests (max 3)</li>
+    <li><strong>Daemon Threads</strong> - Background operations and cleanup</li>
+</ul>
+
+<h3>Client Threading</h3>
+<ul>
+    <li><strong>JavaFX Application Thread</strong> - UI updates and event handling</li>
+    <li><strong>Network Threads</strong> - Background network operations</li>
+    <li><strong>Auto-refresh Thread</strong> - Periodic email checking (30s interval)</li>
+    <li><strong>Heartbeat Thread</strong> - Server status monitoring (5s interval)</li>
+</ul>
+
+<h2>Data Persistence</h2>
+
+<p>The server uses file-based persistence:</p>
+<ul>
+    <li><strong>Storage Location</strong> - <code>data/database.txt</code></li>
+    <li><strong>Format</strong> - Java serialization of mailbox data</li>
+    <li><strong>Automatic Backup</strong> - Changes saved immediately</li>
+    <li><strong>Account Initialization</strong> - Missing accounts created on startup</li>
+</ul>
+
+<h2>Error Handling</h2>
+
+<h3>Network Errors</h3>
+<ul>
+    <li>Connection timeout detection</li>
+    <li>Server unavailability handling</li>
+    <li>Graceful degradation of functionality</li>
+    <li>Automatic retry mechanisms where appropriate</li>
+</ul>
+
+<h3>User Feedback</h3>
+<ul>
+    <li>Informative error messages</li>
+    <li>Success confirmations for operations</li>
+    <li>Real-time status indicators</li>
+    <li>Contextual help and guidance</li>
+</ul>
+
+</body>
+</html>
