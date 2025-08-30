@@ -31,7 +31,6 @@ public class LoginController {
         ClientModel clientModel = new ClientModel(email);
         ClientService clientService = new ClientService(clientModel);
         
-        // Use async login
         clientService.login(() -> {
             try {
                 NavigationController.showMailboxScene(clientModel, clientService);

@@ -16,6 +16,7 @@
       <HBox alignment="CENTER_LEFT" spacing="20.0">
         <Button fx:id="logoutButton" onAction="#handleLogout" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Logout" />
         <Label fx:id="userEmailLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;" text="User: " />
+        <Label fx:id="serverStatusLabel" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 0 0 0 20;" text="Server: Connecting..." />
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="composeButton" onAction="#handleCompose" style="-fx-background-color: #4CAF50; -fx-text-fill: white;" text="Compose Email" />
         <Button fx:id="deleteButton" onAction="#handleDelete" style="-fx-background-color: #FF9800; -fx-text-fill: white;" text="Delete Email" />

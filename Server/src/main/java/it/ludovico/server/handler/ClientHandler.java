@@ -52,6 +52,9 @@ public class ClientHandler implements Runnable {
                 case "FORWARD_EMAIL":
                     handleForwardEmail(input, output);
                     break;
+                case "PING":
+                    output.writeObject("PONG");
+                    break;
                 default:
                     LogService.warn("Unknown command received: " + command);
                     output.writeObject(false);
@@ -90,13 +93,12 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleFetchNewEmail(ObjectInputStream input, ObjectOutputStream output) throws IOException, ClassNotFoundException {
-        String userEmail = (String) input.readObject(); // Ora il client deve passare l'email ogni volta
+        String userEmail = (String) input.readObject();
         
         if (emailService.checkRegisteredAccount(userEmail)) {
             List<Email> newEmails = emailService.getNewEmails(userEmail);
             output.writeObject(newEmails);
             
-            // Marca le email come consegnate dopo averle inviate al client
             if (!newEmails.isEmpty()) {
                 emailService.markEmailsAsDelivered(userEmail, newEmails);
             }

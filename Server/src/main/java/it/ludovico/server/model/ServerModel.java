@@ -38,7 +38,6 @@ public class ServerModel implements EmailService {
     );
 
     public ServerModel() {
-        // Setup logging first before any operations
         LogService.setLogHandler(logs::add);
         this.mailboxesRepository = new MailboxesRepository();
         initializeAccounts();
@@ -78,7 +77,6 @@ public class ServerModel implements EmailService {
         Set<String> existingAccounts = mailboxesRepository.getAccountMails();
         boolean needsSave = false;
         
-        // Assicurati che tutti gli account registrati esistano
         for(String account : ACCOUNT_REGISTERED) {
             if (!existingAccounts.contains(account)) {
                 mailboxesRepository.addAccount(account);
@@ -99,7 +97,6 @@ public class ServerModel implements EmailService {
     public List<Email> getUserMailbox(String user) {
         List<Email> mailbox = mailboxesRepository.getMailBox(user);
         if (mailbox == null && checkRegisteredAccount(user)) {
-            // Account registrato ma mailbox non inizializzata - la creiamo
             mailboxesRepository.addAccount(user);
             try {
                 mailboxesRepository.saveMailBoxes();
@@ -170,7 +167,6 @@ public class ServerModel implements EmailService {
             return false;
         }
         
-        // Find the email by ID
         Email emailToDelete = null;
         for (Email email : mailbox) {
             if (email.getId().toString().equals(emailId)) {
@@ -195,19 +191,16 @@ public class ServerModel implements EmailService {
 
     @Override
     public boolean replyToEmail(String originalEmailId, Email replyEmail) {
-        // Invio la reply come una normale email
         return sendEmail(replyEmail);
     }
 
     @Override
     public boolean replyAllToEmail(String originalEmailId, Email replyEmail) {
-        // Invio la reply-all come una normale email
         return sendEmail(replyEmail);
     }
 
     @Override
     public boolean forwardEmail(String originalEmailId, Email forwardEmail) {
-        // Invio l'email inoltrata come una normale email
         return sendEmail(forwardEmail);
     }
 

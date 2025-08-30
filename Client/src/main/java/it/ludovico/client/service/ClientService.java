@@ -22,11 +22,16 @@ public class ClientService {
 
     private final ClientModel model;
     
-    // Auto-refresh fields
     private ScheduledExecutorService autoRefreshScheduler;
     private ScheduledFuture<?> autoRefreshTask;
-    private final int refreshInterval = 30; // intervallo fisso di 30 secondi
+    private final int refreshInterval = 30;
     private Runnable onEmailCountChange;
+    
+    private ScheduledExecutorService heartbeatScheduler;
+    private ScheduledFuture<?> heartbeatTask;
+    private final int heartbeatInterval = 15;
+    private Runnable onServerStatusChange;
+    private boolean lastServerStatus = true;
 
     public ClientService(ClientModel model) {
         this.model = model;
@@ -34,6 +39,10 @@ public class ClientService {
     
     public void setOnEmailCountChange(Runnable callback) {
         this.onEmailCountChange = callback;
+    }
+    
+    public void setOnServerStatusChange(Runnable callback) {
+        this.onServerStatusChange = callback;
     }
 
     public void login(Runnable OnSuccess) {
@@ -54,7 +63,7 @@ public class ClientService {
             } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
                     model.setConnectionStatus(false);
-                    AlertService.showError("Login Error", "Connection failed: " + e.getMessage());
+                    AlertService.showError("Login Error", "Cannot connect to mail server. Please check your connection and try again.");
                 });
             }
         }).start();
@@ -75,7 +84,7 @@ public class ClientService {
                 });
             } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Send Error", "Connection error: " + e.getMessage());
+                    AlertService.showError("Send Error", "Cannot connect to mail server. Your email was not sent. Please try again.");
                 });
             }
 
@@ -94,7 +103,7 @@ public class ClientService {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Refresh Error", "Could not fetch emails: " + e.getMessage());
+                    AlertService.showError("Refresh Error", "Cannot connect to mail server. Unable to check for new emails.");
                 });
             }
         }).start();
@@ -107,7 +116,6 @@ public class ClientService {
                 
                 Platform.runLater(() -> {
                     if (deleted) {
-                        // Remove email from local model
                         model.getEmails().removeIf(email -> email.getId().toString().equals(emailId));
                         AlertService.showSuccess("Delete", "Email deleted successfully");
                     } else {
@@ -116,7 +124,7 @@ public class ClientService {
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Delete Error", "Connection error: " + e.getMessage());
+                    AlertService.showError("Delete Error", "Cannot connect to mail server. The email was not deleted. Please try again.");
                 });
             }
         }).start();
@@ -180,8 +188,8 @@ public class ClientService {
              ObjectInputStream input = new ObjectInputStream(socket.getInputStream())) {
 
             output.writeObject(Commands.DELETE_EMAIL);
-            output.writeObject(model.getUser());  // Send current user email
-            output.writeObject(emailId);          // Send email ID to delete
+            output.writeObject(model.getUser());
+            output.writeObject(emailId);
 
             Object response = input.readObject();
             return (Boolean) response;
@@ -202,7 +210,7 @@ public class ClientService {
                 });
             } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Reply Error", "Connection error: " + e.getMessage());
+                    AlertService.showError("Reply Error", "Cannot connect to mail server. Your reply was not sent. Please try again.");
                 });
             }
         }).start();
@@ -222,7 +230,7 @@ public class ClientService {
                 });
             } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Reply All Error", "Connection error: " + e.getMessage());
+                    AlertService.showError("Reply All Error", "Cannot connect to mail server. Your reply was not sent. Please try again.");
                 });
             }
         }).start();
@@ -242,7 +250,7 @@ public class ClientService {
                 });
             } catch (IOException | ClassNotFoundException e) {
                 Platform.runLater(() -> {
-                    AlertService.showError("Forward Error", "Connection error: " + e.getMessage());
+                    AlertService.showError("Forward Error", "Cannot connect to mail server. Your email was not forwarded. Please try again.");
                 });
             }
         }).start();
@@ -311,6 +319,7 @@ public class ClientService {
             autoRefreshScheduler.shutdown();
             autoRefreshScheduler = null;
         }
+        stopHeartbeat();
     }
     
     private void scheduleNextRefresh() {
@@ -321,7 +330,6 @@ public class ClientService {
         autoRefreshTask = autoRefreshScheduler.schedule(() -> {
             refreshEmailsAuto();
             
-            // Programma il prossimo refresh
             if (!autoRefreshScheduler.isShutdown()) {
                 scheduleNextRefresh();
             }
@@ -336,19 +344,91 @@ public class ClientService {
                 Platform.runLater(() -> {
                     if (newEmails != null && !newEmails.isEmpty()) {
                         model.addNewEmails(FXCollections.observableList(newEmails));
-                        // Notifica il cambio del conteggio email
                         if (onEmailCountChange != null) {
                             onEmailCountChange.run();
                         }
                     }
                 });
             } catch (Exception e) {
-                // Silent fail for auto-refresh
+                //intenzionale
             }
         });
         refreshThread.setDaemon(true);
         refreshThread.start();
     }
     
+    public void startHeartbeat() {
+        if (heartbeatScheduler == null || heartbeatScheduler.isShutdown()) {
+            heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "Heartbeat-Thread");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+        
+        checkServerStatus();
+        scheduleNextHeartbeat();
+    }
+    
+    public void stopHeartbeat() {
+        if (heartbeatTask != null) {
+            heartbeatTask.cancel(true);
+            heartbeatTask = null;
+        }
+        if (heartbeatScheduler != null) {
+            heartbeatScheduler.shutdown();
+            heartbeatScheduler = null;
+        }
+    }
+    
+    private void scheduleNextHeartbeat() {
+        if (heartbeatTask != null) {
+            heartbeatTask.cancel(false);
+        }
+        
+        heartbeatTask = heartbeatScheduler.schedule(() -> {
+            checkServerStatus();
+            
+            if (!heartbeatScheduler.isShutdown()) {
+                scheduleNextHeartbeat();
+            }
+        }, heartbeatInterval, TimeUnit.SECONDS);
+    }
+    
+    private void checkServerStatus() {
+        Thread heartbeatThread = new Thread(() -> {
+            boolean serverOnline = false;
+            try (Socket socket = new Socket()) {
+                socket.connect(new java.net.InetSocketAddress(SERVER_HOST, SERVER_PORT), 2000);
+                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+                output.writeObject(Commands.PING);
+                serverOnline = true;
+            } catch (IOException e) {
+                serverOnline = false;
+            }
+            
+            final boolean currentStatus = serverOnline;
+            
+            if (currentStatus != lastServerStatus) {
+                lastServerStatus = currentStatus;
+                Platform.runLater(() -> {
+                    if (onServerStatusChange != null) {
+                        onServerStatusChange.run();
+                    }
+                    
+                    if (currentStatus && model.getConnectionStatus()) {
+                        refreshEmails();
+                    }
+                });
+            }
+        });
+        heartbeatThread.setDaemon(true);
+        heartbeatThread.start();
+    }
+    
+    public boolean isServerOnline() {
+        return lastServerStatus;
+    }
 
 }

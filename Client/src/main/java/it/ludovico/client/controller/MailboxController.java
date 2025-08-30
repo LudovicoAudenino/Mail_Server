@@ -43,6 +43,9 @@ public class MailboxController implements Initializable {
     private Label newEmailCountLabel;
     
     @FXML
+    private Label serverStatusLabel;
+    
+    @FXML
     private Button composeButton;
 
     
@@ -84,14 +87,12 @@ public class MailboxController implements Initializable {
             }
         });
 
-        // Custom row factory per highlight email non lette
         emailTable.setRowFactory(tv -> {
             TableRow<Email> row = new TableRow<>();
             row.itemProperty().addListener((obs, oldEmail, newEmail) -> {
                 if (newEmail == null) {
                     row.setStyle("");
                 } else if (!newEmail.isDeliveredTo(clientModel.getUser())) {
-                    // Email non letta - highlight
                     row.setStyle("-fx-background-color: #E3F2FD; -fx-font-weight: bold;");
                 } else {
                     row.setStyle("");
@@ -104,11 +105,10 @@ public class MailboxController implements Initializable {
             if (newSelection != null) {
                 displayEmailContent(newSelection);
                 
-                // Se l'email era non letta, marcala come letta
                 if (!newSelection.isDeliveredTo(clientModel.getUser())) {
                     newSelection.markDeliveredTo(clientModel.getUser());
-                    emailTable.refresh(); // Refresh per aggiornare lo stile
-                    updateNewEmailCount(); // Aggiorna conteggio nella mailbox
+                    emailTable.refresh();
+                    updateNewEmailCount();
                 }
             }
         });
@@ -128,11 +128,13 @@ public class MailboxController implements Initializable {
 
         if (clientService != null) {
             clientService.setOnEmailCountChange(this::updateNewEmailCount);
+            clientService.setOnServerStatusChange(this::updateServerStatus);
             clientService.startAutoRefresh();
+            clientService.startHeartbeat();
         }
         
-        // Inizializza il conteggio delle nuove email
         updateNewEmailCount();
+        updateServerStatus();
     }
     
     
@@ -155,19 +157,11 @@ public class MailboxController implements Initializable {
             AlertService.showError("Navigation Error", "Could not open compose window: " + e.getMessage());
         }
     }
-    
-    @FXML
-    protected void handleRefresh() {
-        if (clientService != null) {
-            clientService.refreshEmails();
-        }
-    }
-    
+
     @FXML
     protected void handleDelete() {
         Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
         if (selectedEmail != null && clientService != null) {
-            // Ask for confirmation
             Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
             confirmation.setTitle("Delete Email");
             confirmation.setHeaderText("Delete Email");
@@ -183,11 +177,9 @@ public class MailboxController implements Initializable {
     
     @FXML
     protected void handleLogout() {
-        // Stop auto-refresh prima del logout
         if (clientService != null) {
             clientService.stopAutoRefresh();
         }
-        
         try {
             NavigationController.showLoginScene();
         } catch (IOException e) {
@@ -199,7 +191,6 @@ public class MailboxController implements Initializable {
     protected void handleReply() {
         Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
         if (selectedEmail != null) {
-            // Prepara i dati per la reply
             List<String> replyTo = Arrays.asList(selectedEmail.getFrom());
             String replySubject = selectedEmail.getSubject().startsWith("Re: ") ? 
                 selectedEmail.getSubject() : "Re: " + selectedEmail.getSubject();
@@ -208,7 +199,7 @@ public class MailboxController implements Initializable {
                 "Date: " + selectedEmail.getSent().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + "\n" +
                 "Subject: " + selectedEmail.getSubject() + "\n\n" +
                 selectedEmail.getText();
-                
+
             try {
                 NavigationController.showComposeEmailScene(replyTo, replySubject, replyBody, selectedEmail.getId().toString(), "REPLY");
             } catch (IOException e) {
@@ -221,10 +212,8 @@ public class MailboxController implements Initializable {
     protected void handleReplyAll() {
         Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
         if (selectedEmail != null) {
-            // Prepara i dati per la reply-all
             List<String> replyTo = new ArrayList<>();
             replyTo.add(selectedEmail.getFrom());
-            // Aggiungi tutti i destinatari originali eccetto l'utente corrente
             for (String recipient : selectedEmail.getTo()) {
                 if (!recipient.equals(clientModel.getUser()) && !replyTo.contains(recipient)) {
                     replyTo.add(recipient);
@@ -251,7 +240,6 @@ public class MailboxController implements Initializable {
     protected void handleForward() {
         Email selectedEmail = emailTable.getSelectionModel().getSelectedItem();
         if (selectedEmail != null) {
-            // Prepara i dati per il forward
             String forwardSubject = selectedEmail.getSubject().startsWith("Fwd: ") ? 
                 selectedEmail.getSubject() : "Fwd: " + selectedEmail.getSubject();
             String forwardBody = "\n\n--- Forwarded Message ---\n" + 
@@ -279,6 +267,19 @@ public class MailboxController implements Initializable {
                 newEmailCountLabel.setText("(" + unreadCount + " new)");
             } else {
                 newEmailCountLabel.setText("");
+            }
+        }
+    }
+    
+    private void updateServerStatus() {
+        if (clientService != null && serverStatusLabel != null) {
+            boolean serverOnline = clientService.isServerOnline();
+            if (serverOnline) {
+                serverStatusLabel.setText("Server: Online");
+                serverStatusLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 0 0 0 20; -fx-text-fill: #4CAF50;");
+            } else {
+                serverStatusLabel.setText("Server: Offline");
+                serverStatusLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 0 0 0 20; -fx-text-fill: #f44336;");
             }
         }
     }

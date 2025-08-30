@@ -1,14 +1,11 @@
 package it.ludovico.client.controller;
 
-import it.ludovico.client.HelloApplication;
+import it.ludovico.client.ClientApplication;
 import it.ludovico.client.model.ClientModel;
-import it.ludovico.shared.model.Email;
 import it.ludovico.client.service.ClientService;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.Screen;
-import javafx.geometry.Rectangle2D;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,7 +39,7 @@ public class NavigationController {
     
     
     public static void showLoginScene() throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("login-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("login-view.fxml"));
         mainScene.setRoot(fxmlLoader.load());
         primaryStage.setTitle("Mail Client - Login");
     }
@@ -50,7 +47,7 @@ public class NavigationController {
     public static void showMailboxScene(ClientModel clientModel, ClientService clientService) throws IOException {
         setCurrentClient(clientModel, clientService);
         
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("mailbox-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("mailbox-view.fxml"));
         mainScene.setRoot(fxmlLoader.load());
         
         MailboxController controller = fxmlLoader.getController();
@@ -64,7 +61,7 @@ public class NavigationController {
     }
     
     public static void showComposeEmailScene(List<String> to, String subject, String body, String originalEmailId, String action) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("compose-email-view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(ClientApplication.class.getResource("compose-email-view.fxml"));
         mainScene.setRoot(fxmlLoader.load());
         
         ComposeEmailController controller = fxmlLoader.getController();

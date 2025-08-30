@@ -3,6 +3,7 @@ package it.ludovico.client.controller;
 import it.ludovico.client.model.ClientModel;
 import it.ludovico.client.service.AlertService;
 import it.ludovico.client.service.ClientService;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
@@ -32,7 +33,7 @@ public class ComposeEmailController  {
     private ClientModel clientModel;
     private ClientService clientService;
     private String originalEmailId;
-    private String action; // REPLY, REPLY_ALL, FORWARD
+    private String action;
 
     
     public void initializeWithClient(ClientModel model, ClientService service) {
@@ -56,8 +57,27 @@ public class ComposeEmailController  {
         
         if (body != null) {
             messageArea.setText(body);
-            // Posiziona il cursore all'inizio per facilitare la digitazione della risposta
             messageArea.positionCaret(0);
+        }
+        if (action != null && originalEmailId != null) {
+            switch (action) {
+                case "REPLY":
+                    toField.setDisable(true);
+                    subjectField.setDisable(true);
+                    messageArea.requestFocus();
+                    break;
+                case "REPLY_ALL":
+                    toField.setDisable(true);
+                    subjectField.setDisable(true);
+                    messageArea.requestFocus();
+                    break;
+                case "FORWARD":
+                    subjectField.setDisable(true);
+                    messageArea.setDisable(true);
+                    break;
+                default:
+                    break;
+            }
         }
     }
     
@@ -110,7 +130,6 @@ public class ComposeEmailController  {
         
         sendButton.setDisable(true);
         
-        // Usa il metodo appropriato basato sull'azione
         if (action != null && originalEmailId != null) {
             switch (action) {
                 case "REPLY":
@@ -126,7 +145,6 @@ public class ComposeEmailController  {
                     clientService.sendEmail(recipients, subject, message);
             }
         } else {
-            // Email normale
             clientService.sendEmail(recipients, subject, message);
         }
         

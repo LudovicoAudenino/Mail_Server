@@ -18,10 +18,7 @@ public class ServerController implements Initializable {
     
     @FXML
     private Label serverStatusLabel;
-    
-    @FXML
-    private Label requestsProcessedLabel;
-    
+
     @FXML
     private Button toggleServerButton;
     
@@ -44,7 +41,6 @@ public class ServerController implements Initializable {
     }
 
     private void setupBindings() {
-        // Bind server status label
         serverStatusLabel.textProperty().bind(
             Bindings.createStringBinding(() -> 
                 serverModel.runningProperty().get() ? "RUNNING" : "STOPPED",
@@ -52,23 +48,14 @@ public class ServerController implements Initializable {
             )
         );
         
-        // Bind server status color
         serverStatusLabel.textFillProperty().bind(
             Bindings.createObjectBinding(() -> 
                 serverModel.runningProperty().get() ? Color.web("#4caf50") : Color.web("#d32f2f"),
                 serverModel.runningProperty()
             )
         );
+
         
-        // Bind requests processed count
-        requestsProcessedLabel.textProperty().bind(
-            Bindings.createStringBinding(() -> 
-                String.valueOf(serverModel.requestsProcessedProperty().get()),
-                serverModel.requestsProcessedProperty()
-            )
-        );
-        
-        // Bind toggle button text and style
         toggleServerButton.textProperty().bind(
             Bindings.createStringBinding(() -> 
                 serverModel.runningProperty().get() ? "STOP SERVER" : "START SERVER",
@@ -87,7 +74,6 @@ public class ServerController implements Initializable {
     }
 
     private void setupLogsBinding() {
-        // Bind logs TextArea to the ObservableList
         serverModel.getLogs().addListener((javafx.collections.ListChangeListener<String>) change -> {
             StringBuilder logText = new StringBuilder();
             for (String log : serverModel.getLogs()) {
@@ -95,7 +81,6 @@ public class ServerController implements Initializable {
             }
             logsTextArea.setText(logText.toString());
             
-            // Auto scroll to bottom
             logsTextArea.positionCaret(logsTextArea.getText().length());
         });
     }
