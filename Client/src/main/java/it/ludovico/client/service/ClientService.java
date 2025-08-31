@@ -482,7 +482,7 @@ public class ClientService {
                     }
                 });
             } catch (Exception e) {
-                //intenzionale
+                //intentional
             }
         });
         refreshThread.setDaemon(true);

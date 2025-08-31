@@ -183,7 +183,7 @@ public class ServerModel implements EmailService {
                 mailboxesRepository.saveMailBoxes();
                 return true;
             } catch (IOException e) {
-                LogService.error("Errore nel salvataggio: " + e.getMessage());
+                LogService.error("Error saving emails: " + e.getMessage());
                 return false;
             }
 
@@ -223,7 +223,7 @@ public class ServerModel implements EmailService {
             try {
                 mailboxesRepository.saveMailBoxes();
             } catch (IOException e) {
-                LogService.error("Errore nel salvataggio durante inizializzazione: " + e.getMessage());
+                LogService.error("Error saving during initialization: " + e.getMessage());
             }
         }
     }
@@ -247,10 +247,10 @@ public class ServerModel implements EmailService {
             mailboxesRepository.addAccount(user);
             try {
                 mailboxesRepository.saveMailBoxes();
-                LogService.info("Creata mailbox mancante per: " + user);
+                LogService.info("Created missing mailbox for: " + user);
                 return new ArrayList<>();
             } catch (IOException e) {
-                LogService.error("Errore nella creazione mailbox per " + user + ": " + e.getMessage());
+                LogService.error("Error creating mailbox for " + user + ": " + e.getMessage());
                 return null;
             }
         }
@@ -303,7 +303,7 @@ public class ServerModel implements EmailService {
         try {
             mailboxesRepository.saveMailBoxes();
         } catch (IOException e) {
-            LogService.error("Errore nel salvataggio dopo aver marcato email come consegnate: " + e.getMessage());
+            LogService.error("Error saving after marking emails as delivered: " + e.getMessage());
         }
     }
 

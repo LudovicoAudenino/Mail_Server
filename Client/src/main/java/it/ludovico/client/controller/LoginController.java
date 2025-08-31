@@ -26,6 +26,11 @@ public class LoginController {
             return;
         }
         
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            AlertService.showError("Error", "Invalid email format: " + email);
+            return;
+        }
+        
         loginButton.setDisable(true);
 
         ClientModel clientModel = new ClientModel(email);
