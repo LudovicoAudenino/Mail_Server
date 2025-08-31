@@ -190,6 +190,7 @@ public class ClientService {
                         OnSuccess.run();
                     } else {
                         model.setConnectionStatus(false);
+                        AlertService.showError("Login Failed", "Email address not registered. Please check your email address and try again.");
                     }
                 });
             } catch (IOException | ClassNotFoundException e) {
